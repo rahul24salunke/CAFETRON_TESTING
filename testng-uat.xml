@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Cafetron UAT UI Suite" verbose="1" parallel="false">
+    <listeners>
+        <listener class-name="com.cafetron.listeners.TestListener"/>
+    </listeners>
+    <test name="UAT">
+        <groups>
+            <run>
+                <include name="uat"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.cafetron.tests.auth.LoginTests"/>
+            <class name="com.cafetron.tests.registration.RegistrationTests"/>
+            <class name="com.cafetron.tests.menu.MenuBrowsingTests"/>
+            <class name="com.cafetron.tests.cart.CartTests"/>
+            <class name="com.cafetron.tests.wallet.WalletTests"/>
+            <class name="com.cafetron.tests.orders.OrdersAndQrTests"/>
+            <class name="com.cafetron.tests.vendor.VendorTests"/>
+            <class name="com.cafetron.tests.admin.AdminTests"/>
+            <class name="com.cafetron.tests.e2e.EndToEndTests"/>
+        </classes>
+    </test>
+</suite>
