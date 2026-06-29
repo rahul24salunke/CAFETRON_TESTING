@@ -8,6 +8,7 @@ import com.cafetron.flows.RegistrationFlow;
 import com.cafetron.pages.LoginPage;
 import com.cafetron.pages.MenuPage;
 import com.cafetron.pages.RegisterPage;
+import com.cafetron.utilities.ExcelUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -29,6 +30,7 @@ public class RegistrationTests extends BaseTest {
         TestUser user = TestDataFactory.uniqueUser(Role.EMPLOYEE);
         boolean registered = new RegistrationFlow(getDriver()).register(user);
         Assert.assertTrue(registered, "Employee registration should show success or return to login");
+        ExcelUtils.writeRegisteredUser("shouldRegisterEmployeeThroughUiAndLogin", user);
 
         LoginPage loginPage = new LoginPage(getDriver());
         loginPage.open();
