@@ -1,9 +1,7 @@
 package com.cafetron.pages;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -27,6 +25,26 @@ public class AdminVendorsPage extends BasePage {
     private final By vendorTimestampCandidates = By.cssSelector(
             "time, [datetime], [id*='time'], [id*='date'], [class*='time'], [class*='date'], "
                     + "[data-testid*='time'], [data-testid*='date']");
+    // Locator added inside AdminVendorsPage
+    private final By dummyVendorDeleteButton =
+            By.id("vendor-manage-delete-btn-1");
+
+    // Methods added inside AdminVendorsPage
+    public void deleteDummyVendor() {
+        WebElement deleteButton = wait.until(ExpectedConditions.elementToBeClickable(dummyVendorDeleteButton));
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", deleteButton);
+        js.executeScript("arguments[0].click();", deleteButton);
+
+        Alert alert = wait.until(ExpectedConditions.alertIsPresent());
+        alert.accept();
+    }
+
+    public boolean isDeleteConfirmed() {
+        return wait.until(ExpectedConditions.invisibilityOfElementLocated(dummyVendorDeleteButton));
+    }
+
+
 
     public AdminVendorsPage(WebDriver driver) {
         super(driver);

@@ -1,10 +1,7 @@
 package com.cafetron.pages;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.StaleElementReferenceException;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.util.List;
 import java.util.Locale;
@@ -29,7 +26,47 @@ public class VendorMenuManagePage extends BasePage {
     private final By formErrorMsg = By.id("menu-item-name-error");
     private final By menuEditButton = By.id("menu-manage-item-edit-btn-1");
     private final By menuEditConfButton = By.id("menu-item-form-submit-btn");
+    private final By firstMenuItemName = By.id("menu-manage-item-name-1");
+    private final By menuItemNames = By.cssSelector("[id^='menu-manage-item-name-']");
+    private final By dummyAdminDeleteButton =
+            By.id("menu-manage-item-delete-btn-1");
+    final By dummyVendorDeleteButton =
+            By.id("vendor-manage-delete-btn-1");
+    private final By zeroStockUnavailableButton =
+            By.id("menu-manage-item-toggle-btn-2");
 
+    public void clickZeroStockUnavailableButton() {
+        waitForMenuManagementState();
+
+        WebElement zeroStockButton = wait.until(
+                ExpectedConditions.presenceOfElementLocated(zeroStockUnavailableButton)
+        );
+
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript(
+                "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+                zeroStockButton
+        );
+
+        wait.until(ExpectedConditions.elementToBeClickable(zeroStockButton));
+
+        js.executeScript("arguments[0].click();", zeroStockButton);
+    }
+
+    public void deleteDummyMenuItem() {
+        WebElement deleteButton = wait.until(ExpectedConditions.elementToBeClickable(dummyAdminDeleteButton));
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", deleteButton);
+        js.executeScript("arguments[0].click();", deleteButton);
+
+        Alert alert = wait.until(ExpectedConditions.alertIsPresent());
+        alert.accept();
+    }
+
+
+    public boolean isDeleteConfirmed() {
+        return wait.until(ExpectedConditions.invisibilityOfElementLocated(dummyAdminDeleteButton));
+    }
     public VendorMenuManagePage(WebDriver driver) {
         super(driver);
     }
@@ -61,6 +98,11 @@ public class VendorMenuManagePage extends BasePage {
     public boolean isFormErrorDisplayed(){
         return isDisplayed(formErrorMsg);
     }
+
+    public String firstMenuItemName() {
+        return waitForVisible(firstMenuItemName).getText().trim();
+    }
+
 
     public void openCreateItemForm() {
         waitForCreateItemFormToBeAvailable();

@@ -179,30 +179,32 @@ public class DefectRegressionTests extends BaseTest {
             groups = {"defect", "regression"})
     public void df011DuplicateVendorMenuItemShouldBeRejected() {
         new AuthFlow(getDriver()).loginAs(Role.VENDOR);
+
         VendorMenuManagePage managePage = new VendorMenuManagePage(getDriver());
         managePage.open();
-        Assert.assertTrue(managePage.hasMenuManagementState(),
-                "Vendor menu management should finish loading before duplicate setup. Visible text: "
-                        + managePage.visibleTextSnapshot());
 
-        String itemName = TestDataFactory.uniqueName("Duplicate Item");
-        managePage.createItem(itemName, "20", "4", "Snack");
-        Assert.assertTrue(managePage.waitForItemCountAtLeast(itemName, 1),
-                "DF-011 setup failed: first menu item did not appear after save. Visible items: "
-                        + managePage.menuItemNamesSnapshot());
+        Assert.assertTrue(
+                managePage.hasMenuManagementState(),
+                "Vendor menu management should load"
+        );
 
-        int countBeforeDuplicateAttempt = managePage.countItemsNamed(itemName);
+        String existingItemName = managePage.firstMenuItemName();
+        int countBeforeDuplicateAttempt = managePage.countItemsNamed(existingItemName);
+
         managePage.openCreateItemForm();
-        managePage.fillItemForm(itemName, "20", "4", "Snack");
-        boolean duplicateSubmitClicked = managePage.submitItemFormIfEnabled();
-        Assert.assertTrue(managePage.waitForDuplicateSaveAttemptToSettle(
-                        itemName, countBeforeDuplicateAttempt, duplicateSubmitClicked),
-                "Duplicate save attempt did not settle into a validation, rejection, or refreshed menu state. "
-                        + "Visible text: " + managePage.visibleTextSnapshot());
+        managePage.fillItemForm(existingItemName, "20", "4", "Snack");
+        managePage.submitItemForm();
 
-        Assert.assertEquals(managePage.countItemsNamed(itemName), countBeforeDuplicateAttempt,
-                "Duplicate item name should not create another visible menu item. Submit clicked: "
-                        + duplicateSubmitClicked + ". Visible items: " + managePage.menuItemNamesSnapshot());
+        Assert.assertTrue(
+                managePage.hasSaveFeedback() || managePage.hasMenuManagementState(),
+                "Duplicate save attempt should show feedback or keep menu list visible"
+        );
+
+        Assert.assertEquals(
+                managePage.countItemsNamed(existingItemName),
+                countBeforeDuplicateAttempt,
+                "Duplicate item name should not create another visible menu item"
+        );
     }
 
     @Test(description = "DF-012: Vendor menu form should validate zero stock clearly",
@@ -221,12 +223,27 @@ public class DefectRegressionTests extends BaseTest {
             groups = {"defect", "regression"})
     public void df013VendorShouldRemainAuthenticatedAfterAvailabilityAction() {
         new AuthFlow(getDriver()).loginAs(Role.VENDOR);
+
         VendorMenuManagePage managePage = new VendorMenuManagePage(getDriver());
         managePage.open();
 
-        Assert.assertTrue(managePage.isDisplayed(), "Vendor should remain in menu-management area");
-    }
+        Assert.assertTrue(
+                managePage.isDisplayed(),
+                "Vendor should be on menu-management page before availability action"
+        );
 
+        managePage.clickZeroStockUnavailableButton();
+
+        Assert.assertTrue(
+                managePage.currentUrlContains("/login"),
+                "Vendor should not be redirected to login after toggling zero-stock unavailable item"
+        );
+
+        Assert.assertTrue(
+                managePage.isDisplayed() || managePage.hasSaveFeedback(),
+                "Vendor should remain logged in and see menu management or validation feedback"
+        );
+    }
     @Test(description = "DF-014: Vendor locked delete controls should be clear and not misleading",
             groups = {"defect", "regression", "usability"})
     public void df014VendorDeleteControlShouldNotBeMisleading() {
@@ -368,7 +385,7 @@ public class DefectRegressionTests extends BaseTest {
         Assert.assertFalse(managePage.isFormErrorDisplayed(), "Add item form should open cleanly");
     }
 
-    
+
 
     @Test(description = "DF-028: Employee-only pages should block admin/vendor users",
             groups = {"defect", "regression", "rbac"})
@@ -388,8 +405,17 @@ public class DefectRegressionTests extends BaseTest {
         VendorMenuManagePage managePage = new VendorMenuManagePage(getDriver());
         managePage.open();
 
-        Assert.assertTrue(managePage.isDisplayed(), "Admin should remain authenticated on menu management");
+        Assert.assertTrue(managePage.isDisplayed(),
+                "Admin should remain authenticated on menu management");
+
+        managePage.deleteDummyMenuItem();
+        Assert.assertTrue(managePage.isDeleteConfirmed(),
+                "Dummy menu item delete should be confirmed");
+
+        Assert.assertTrue(managePage.isDisplayed(),
+                "Admin should remain authenticated after deleting menu item");
     }
+
 
     @Test(description = "DF-030: Admin should be able to reach vendor delete/action state without logout",
             groups = {"defect", "regression"})
@@ -399,28 +425,86 @@ public class DefectRegressionTests extends BaseTest {
         vendorsPage.open();
 
         Assert.assertTrue(vendorsPage.isDisplayed(), "Admin should remain authenticated on vendor management");
+
+        vendorsPage.deleteDummyVendor();
+//        Assert.assertTrue(vendorsPage.hasFeedback(),
+//                "Delete toast should be visible after confirming vendor deletion");
+//        pauseForToastScreenshot();
+
+        Assert.assertTrue(vendorsPage.isDeleteConfirmed(),
+                "Dummy vendor delete should be confirmed");
+
+        Assert.assertTrue(vendorsPage.isDisplayed(),
+                "Admin should remain authenticated after deleting vendor");
     }
 
     @Test(description = "DF-031: Daily cutoff status should be visible in operations table",
             groups = {"defect", "regression"})
     public void df031DailyCutoffStatusShouldBeVisible() {
         new AuthFlow(getDriver()).loginAs(Role.ADMIN);
-        AdminOperationsPage operationsPage = new AdminOperationsPage(getDriver());
-        operationsPage.open();
 
-        Assert.assertTrue(operationsPage.hasStatusSummary(), "Daily cutoff status should be visible");
+        AdminOperationsPage Adminpage = new AdminOperationsPage(getDriver());
+        Adminpage.open();
+
+        Assert.assertTrue(
+                Adminpage.isDisplayed(),
+                "Admin operations page should be visible"
+        );
+
+        Assert.assertTrue(
+                Adminpage.hasStatusSummary(),
+                "Daily cutoff status should be visible"
+        );
+
+        LocalTime cutoffTime = Adminpage.configuredCutoffTime();
+        LocalTime browserTime = Adminpage.browserLocalTime();
+
+        Assert.assertFalse(
+                browserTime.isBefore(cutoffTime),
+                "Browser local time " + browserTime
+                        + " should be after or equal to configured cutoff time " + cutoffTime
+        );
+
+        Assert.assertTrue(
+                Adminpage.isCutoffReached(),
+                "Cutoff should show Reached after cutoff. Actual status: "
+                        + Adminpage.cutoffStatusText()
+        );
+
+        Assert.assertTrue(
+                Adminpage.isOrderingAllowedNo(),
+                "Ordering allowed should be No after cutoff. Actual value: "
+                        + Adminpage.orderingAllowedText()
+        );
     }
 
     @Test(description = "DF-032: Cutoff update should validate required field when cleared",
             groups = {"defect", "regression", "sanity", "usability"})
     public void df032CutoffUpdateShouldValidateRequiredField() {
         new AuthFlow(getDriver()).loginAs(Role.ADMIN);
+
         AdminOperationsPage operationsPage = new AdminOperationsPage(getDriver());
         operationsPage.open();
+
+        Assert.assertTrue(
+                operationsPage.isDisplayed(),
+                "Admin operations page should be visible"
+        );
+
+        Assert.assertTrue(
+                operationsPage.hasCutoffControls(),
+                "Cutoff controls should be visible"
+        );
+
         operationsPage.clearCutoffAndSave();
 
-        Assert.assertTrue(operationsPage.hasFeedback() || operationsPage.hasCutoffControls(),
-                "Cleared cutoff save should show validation feedback and keep cutoff controls visible");
+        Assert.assertTrue(
+                operationsPage.hasFeedback() || operationsPage.hasCutoffRequiredValidation(),
+                "Cleared cutoff save should show validation feedback. Toast: "
+                        + operationsPage.feedbackText()
+                        + " Validation: "
+                        + operationsPage.cutoffValidationMessage()
+        );
     }
 
     private void assertTimestampMatchesBrowserLocalTime(SoftAssert softAssert, String recordLabel,
