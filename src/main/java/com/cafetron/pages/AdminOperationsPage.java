@@ -1,7 +1,12 @@
 package com.cafetron.pages;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+
+import java.time.LocalTime;
+import java.util.Locale;
 
 public class AdminOperationsPage extends BasePage {
     private final By page = By.id("admin-operations-page");
@@ -13,6 +18,25 @@ public class AdminOperationsPage extends BasePage {
     private final By tableOrderingAllowed = By.id("admin-operations-table-ordering-allowed");
     private final By toast = By.id("admin-operations-toast");
 
+    public boolean hasCutoffRequiredValidation() {
+        WebElement input = waitForVisible(cutoffInput);
+        String validationMessage = input.getDomProperty("validationMessage");
+        Boolean invalid = (Boolean) ((JavascriptExecutor) driver).executeScript(
+                "return !arguments[0].validity.valid;",
+                input
+        );
+
+        return Boolean.TRUE.equals(invalid)
+                || validationMessage != null && !validationMessage.isBlank();
+    }
+
+    public String feedbackText() {
+        return getOptionalText(toast);
+    }
+
+    public String cutoffValidationMessage() {
+        return waitForVisible(cutoffInput).getDomProperty("validationMessage");
+    }
     public AdminOperationsPage(WebDriver driver) {
         super(driver);
     }
@@ -39,6 +63,27 @@ public class AdminOperationsPage extends BasePage {
 
     public void toggleOrderingWindow() {
         click(toggleButton);
+    }
+
+    public LocalTime configuredCutoffTime() {
+        String cutoffValue = waitForVisible(cutoffInput).getDomProperty("value");
+        return LocalTime.parse(cutoffValue);
+    }
+
+    public LocalTime browserLocalTime() {
+        String browserTime = (String) ((JavascriptExecutor) driver).executeScript(
+                "return new Date().toTimeString().slice(0, 5);"
+        );
+        return LocalTime.parse(browserTime);
+    }
+
+    public boolean isCutoffReached() {
+        String status = cutoffStatusText().toLowerCase(Locale.ROOT);
+        return status.contains("reached") && !status.contains("not reached");
+    }
+
+    public String cutoffStatusText() {
+        return getOptionalText(statusBanner);
     }
 
     public void setCutoffTime(String cutoffTime) {
