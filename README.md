@@ -103,6 +103,8 @@ mvn clean test -Dbrowser=edge
 
 ## Credentials
 
-The employee user is configured in `src/test/resources/config.properties`.
+Employee, vendor, and admin login tests use credentials from `src/test/resources/config.properties`
+or matching system properties.
 
-Vendor/admin tests use configured credentials when supplied. If not supplied, the framework attempts to create role-specific users through the registration UI only.
+Vendor/admin credentials must be supplied before running role-specific tests. Registration through the UI
+is reserved for registration test cases only.

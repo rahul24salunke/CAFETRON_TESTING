@@ -4,30 +4,31 @@ import com.cafetron.config.ConfigReader;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.EnumMap;
-import java.util.Map;
 
 public final class TestDataFactory {
     private static final DateTimeFormatter ID_FORMAT = DateTimeFormatter.ofPattern("MMddHHmmss");
-    private static final Map<Role, TestUser> CREATED_USERS = new EnumMap<>(Role.class);
 
     private TestDataFactory() {
     }
 
-    public static TestUser configuredOrGeneratedUser(Role role) {
+    public static TestUser configuredUser(Role role) {
         if (role == Role.EMPLOYEE) {
-            return new TestUser("Kiran QA", "kiran01@cafetron.test", ConfigReader.get("validPassword"),
-                    ConfigReader.get("validEmployeeId"), "QA", Role.EMPLOYEE);
+            String employeeId = requiredCredential("validEmployeeId", "validPassword", role);
+            String password = requiredCredential("validPassword", "validEmployeeId", role);
+            return new TestUser("Employee QA", employeeId.toLowerCase() + "@cafetron.test", password,
+                    employeeId, "QA", Role.EMPLOYEE);
         }
 
         String configuredId = ConfigReader.getOptional(role.name().toLowerCase() + "EmployeeId");
         String configuredPassword = ConfigReader.getOptional(role.name().toLowerCase() + "Password");
-        if (!configuredId.isBlank() && !configuredPassword.isBlank()) {
-            return new TestUser(role.name() + " QA", configuredId.toLowerCase() + "@cafetron.test",
-                    configuredPassword, configuredId, "QA", role);
+        if (configuredId.isBlank() || configuredPassword.isBlank()) {
+            throw new IllegalArgumentException("Missing configured " + role.name().toLowerCase()
+                    + " login credentials. Provide " + role.name().toLowerCase() + "EmployeeId and "
+                    + role.name().toLowerCase() + "Password in config.properties or as system properties.");
         }
 
-        return CREATED_USERS.computeIfAbsent(role, TestDataFactory::uniqueUser);
+        return new TestUser(role.name() + " QA", configuredId.toLowerCase() + "@cafetron.test",
+                configuredPassword, configuredId, "QA", role);
     }
 
     public static TestUser uniqueUser(Role role) {
@@ -43,5 +44,15 @@ public final class TestDataFactory {
 
     public static String uniqueName(String prefix) {
         return prefix + " " + LocalDateTime.now().format(ID_FORMAT);
+    }
+
+    private static String requiredCredential(String key, String pairedKey, Role role) {
+        String value = ConfigReader.getOptional(key);
+        if (value.isBlank()) {
+            throw new IllegalArgumentException("Missing configured " + role.name().toLowerCase()
+                    + " login credentials. Provide " + key + " and " + pairedKey
+                    + " in config.properties or as system properties.");
+        }
+        return value;
     }
 }

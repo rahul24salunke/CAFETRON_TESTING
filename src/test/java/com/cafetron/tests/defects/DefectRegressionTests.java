@@ -14,7 +14,6 @@ import com.cafetron.pages.MenuPage;
 import com.cafetron.pages.OrdersPage;
 import com.cafetron.pages.ProfilePage;
 import com.cafetron.pages.QrScannerPage;
-import com.cafetron.pages.RegisterPage;
 import com.cafetron.pages.VendorMenuManagePage;
 import com.cafetron.pages.VendorOrdersPage;
 import com.cafetron.pages.WalletPage;
@@ -194,16 +193,6 @@ public class DefectRegressionTests extends BaseTest {
         managePage.open();
 
         Assert.assertTrue(managePage.isDisplayed(), "Admin should remain in menu-management area");
-    }
-
-    @Test(description = "DF-018: Public registration should not allow unauthenticated Admin account creation",
-            groups = {"defect", "regression", "rbac"})
-    public void df018PublicAdminRegistrationShouldBeBlocked() {
-        RegisterPage registerPage = new RegisterPage(getDriver());
-        registerPage.open();
-        registerPage.register(TestDataFactory.uniqueUser(Role.ADMIN));
-
-        Assert.assertFalse(registerPage.isSuccessDisplayed(), "Public Admin registration should not succeed");
     }
 
     @Test(description = "DF-019: Wallet top-up should reject impractically high amount",

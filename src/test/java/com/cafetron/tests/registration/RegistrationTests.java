@@ -47,4 +47,14 @@ public class RegistrationTests extends BaseTest {
 
         Assert.assertTrue(registerPage.isErrorDisplayed(), "Blank registration should show validation feedback");
     }
+
+    @Test(description = "DF-018: Public registration should not allow unauthenticated Admin account creation",
+            groups = {"defect", "regression", "rbac"})
+    public void shouldBlockPublicAdminRegistration() {
+        RegisterPage registerPage = new RegisterPage(getDriver());
+        registerPage.open();
+        registerPage.register(TestDataFactory.uniqueUser(Role.ADMIN));
+
+        Assert.assertFalse(registerPage.isSuccessDisplayed(), "Public Admin registration should not succeed");
+    }
 }

@@ -11,6 +11,7 @@
             </run>
         </groups>
         <classes>
+            <class name="com.cafetron.tests.registration.RegistrationTests"/>
             <class name="com.cafetron.tests.defects.DefectRegressionTests"/>
         </classes>
     </test>
